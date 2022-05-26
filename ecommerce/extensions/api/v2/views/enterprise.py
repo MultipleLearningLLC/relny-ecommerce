@@ -46,7 +46,8 @@ from ecommerce.extensions.api.serializers import (
     PartialRedeemedCodeUsageSerializer,
     RedeemedCodeUsageSerializer,
     RefundedOrderCreateVoucherSerializer,
-    TemplateFileAttachmentSerializer
+    TemplateFileAttachmentSerializer,
+    EnterpriseOfferApiSerializer,
 )
 from ecommerce.extensions.api.v2.utils import (
     get_enterprise_from_product,
@@ -84,6 +85,7 @@ logger = logging.getLogger(__name__)
 CouponVouchers = get_model('voucher', 'CouponVouchers')
 Order = get_model('order', 'Order')
 Line = get_model('basket', 'Line')
+ConditionalOffer = get_model('offer', 'ConditionalOffer')
 OfferAssignment = get_model('offer', 'OfferAssignment')
 OfferAssignmentEmailTemplates = get_model('offer', 'OfferAssignmentEmailTemplates')
 TemplateFileAttachment = get_model('offer', 'TemplateFileAttachment')
@@ -1016,6 +1018,28 @@ class EnterpriseCouponViewSet(CouponViewSet):
                         delete_file_from_s3_with_key(file['name'])
                 return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EnterpriseOfferApiViewSet(ModelViewSet): #PermissionRequiredMixin, 
+
+    model = ConditionalOffer
+    serializer_class = EnterpriseOfferApiSerializer
+    ##permission_classes = None #(IsAuthenticated,)
+    #permission_required = 'enterprise.can_view_enterprise_offers'
+    #filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)
+    #filter_fields = ('email_type', 'active')
+
+    http_method_names = ['get']
+
+    # def get_permission_object(self):
+    #     return self.kwargs.get('enterprise_customer')
+
+    def get_queryset(self):
+        return ConditionalOffer.objects.filter(
+            partner=self.request.site.siteconfiguration.partner,
+            condition__enterprise_customer_uuid=self.kwargs.get('enterprise_catalog_uuid'),
+            offer_type=ConditionalOffer.SITE
+        )
 
 
 class OfferAssignmentEmailTemplatesViewSet(PermissionRequiredMixin, ModelViewSet):

@@ -91,3 +91,7 @@ rules.add_perm(
     'enterprise.can_assign_coupon',
     has_admin_access
 )
+rules.add_perm(
+    'enterprise.can_view_enterprise_offers',
+    has_admin_access
+)

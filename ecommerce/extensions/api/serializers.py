@@ -81,6 +81,7 @@ Catalog = get_model('catalogue', 'Catalog')
 CodeAssignmentNudgeEmails = get_model('offer', 'CodeAssignmentNudgeEmails')
 Category = get_model('catalogue', 'Category')
 Line = get_model('order', 'Line')
+ConditionalOffer = get_model('offer', 'ConditionalOffer')
 OfferAssignment = get_model('offer', 'OfferAssignment')
 OfferAssignmentEmailTemplates = get_model('offer', 'OfferAssignmentEmailTemplates')
 TemplateFileAttachment = get_model('offer', 'TemplateFileAttachment')
@@ -972,6 +973,25 @@ class CouponListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ('category', 'client', 'code', 'id', 'title', 'date_created')
+
+class EnterpriseOfferApiSerializer(serializers.ModelSerializer):  # pylint: disable=abstract-method
+    """
+    Serializer for EnterpriseOffer endpoint.
+    """
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        representation['usage_type'] = get_benefit_type(instance.benefit)
+        representation['discount_value'] = instance.benefit.value
+        representation['enterprise_customer_uuid'] = instance.condition.enterprise_customer_uuid
+        #representation['redemptions_remaining'] = instance['count']
+
+        return representation
+
+    class Meta:
+        model = ConditionalOffer
+        fields = '__all__'
 
 
 class OfferAssignmentSummarySerializer(serializers.BaseSerializer):  # pylint: disable=abstract-method

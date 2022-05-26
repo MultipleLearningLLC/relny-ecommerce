@@ -94,6 +94,11 @@ ENTERPRISE_URLS = [
         enterprise_views.EnterpriseCustomerCatalogsViewSet.as_view({'get': 'retrieve'}),
         name='enterprise_customer_catalog_details'
     ),
+    url(
+        r'^enterprise_offers/(?P<enterprise_catalog_uuid>[^/]+)$',
+        enterprise_views.EnterpriseOfferApiViewSet.as_view({'get': 'list'}),
+        name='enterprise_offers_list'
+    ),
 ]
 
 ASSIGNMENT_EMAIL_URLS = [
@@ -134,6 +139,12 @@ router.register(
     r'enterprise/offer-assignment-email-template/(?P<enterprise_customer>{})'.format(UUID_REGEX_PATTERN),
     enterprise_views.OfferAssignmentEmailTemplatesViewSet,
     basename='enterprise-offer-assignment-email-template',
+)
+
+router.register(
+    r'enterprise/enterprise_offers/(?P<enterprise_customer>{})'.format(UUID_REGEX_PATTERN),
+    enterprise_views.EnterpriseOfferApiViewSet,
+    basename='enterprise-offers-api',
 )
 
 router.register(r'courses', course_views.CourseViewSet, basename='course') \
