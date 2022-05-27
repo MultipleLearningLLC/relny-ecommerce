@@ -1036,12 +1036,11 @@ class EnterpriseOfferApiViewSet(ModelViewSet): #PermissionRequiredMixin,
 
     def get_queryset(self):
 
-
         return ConditionalOffer.objects.filter(
             partner=self.request.site.siteconfiguration.partner,
             condition__enterprise_customer_uuid=self.kwargs.get('enterprise_customer'), # this should be enterprise_customer
             offer_type=ConditionalOffer.SITE
-        )
+        ).select_related('condition', 'benefit')
 
 
 class OfferAssignmentEmailTemplatesViewSet(PermissionRequiredMixin, ModelViewSet):
