@@ -982,9 +982,13 @@ class EnterpriseOfferApiSerializer(serializers.ModelSerializer):  # pylint: disa
     def to_representation(self, instance):
         representation = super().to_representation(instance)
 
+        print(instance)
+        print(dir(instance))
         representation['usage_type'] = get_benefit_type(instance.benefit)
         representation['discount_value'] = instance.benefit.value
         representation['enterprise_customer_uuid'] = instance.condition.enterprise_customer_uuid
+        representation['enterprise_catalog_uuid'] = instance.condition.enterprise_customer_catalog_uuid
+        #representation['offer_applications'] = instance.offer_applications.all()
         #representation['redemptions_remaining'] = instance['count']
 
         return representation

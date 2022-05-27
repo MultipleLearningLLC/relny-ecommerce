@@ -39,6 +39,7 @@ from ecommerce.courses.tests.factories import CourseFactory
 from ecommerce.enterprise.benefits import BENEFIT_MAP as ENTERPRISE_BENEFIT_MAP
 from ecommerce.enterprise.conditions import AssignableEnterpriseCustomerCondition
 from ecommerce.enterprise.rules import request_user_has_explicit_access_admin, request_user_has_implicit_access_admin
+from ecommerce.extensions.test import factories as extended_factories
 from ecommerce.enterprise.tests.mixins import EnterpriseServiceMockMixin
 from ecommerce.extensions.catalogue.tests.mixins import DiscoveryTestMixin
 from ecommerce.extensions.offer.constants import (
@@ -3778,6 +3779,64 @@ class EnterpriseCouponViewSetRbacTests(
                     [{'name': 'def.png', 'size': 456, 'contents': '1,2,3', 'type': 'image/png'}])
         # verify that records have been created with 'revoke' email type equal to the bulk count
         assert OfferAssignmentEmailSentRecord.objects.filter(email_type=REVOKE).count() == offer_assignments.count()
+
+
+class EnterpriseOfferApiViewTests(EnterpriseServiceMockMixin, JwtMixin, TestCase):
+
+    def setUp(self):
+        super(EnterpriseOfferApiViewTests, self).setUp()
+
+        self.user = self.create_user(is_staff=True, email='test@example.com')
+        self.client.login(username=self.user.username, password=self.password)
+
+        httpretty.enable()
+        self.mock_access_token_response()
+
+    def tearDown(self):
+        super(EnterpriseOfferApiViewTests, self).tearDown()
+        httpretty.disable()
+        httpretty.reset()
+
+    def test_list(self):
+        """
+        Verify endpoint returns correct number of enterprise offers.
+        """
+
+        # These should be ignored since their associated Condition objects do NOT have an Enterprise Customer UUID.
+        extended_factories.ConditionalOfferFactory.create_batch(3)
+        # Here are some offers for some other enterprise
+        condition = extended_factories.EnterpriseCustomerConditionFactory(
+            enterprise_customer_uuid=uuid4()
+        )
+        extended_factories.EnterpriseOfferFactory.create_batch(
+            2,
+            partner=self.partner,
+            condition=condition,
+        )
+        # Here are the 4 offers for our enterprise
+        enterprise_customer_uuid = str(uuid4())
+        condition = extended_factories.EnterpriseCustomerConditionFactory(
+            enterprise_customer_uuid=enterprise_customer_uuid
+        )
+        enterprise_offers = extended_factories.EnterpriseOfferFactory.create_batch(
+            4,
+            partner=self.partner,
+            condition=condition,
+        )
+
+        for offer in enterprise_offers:
+            print(offer.condition.enterprise_customer_uuid)
+            self.mock_specific_enterprise_customer_api(offer.condition.enterprise_customer_uuid)
+
+        path = reverse(
+            'api:v2:enterprise-offers-api-list',
+            kwargs={'enterprise_customer': enterprise_customer_uuid}
+        )
+        response_json = self.client.get(path).json()
+        assert len(response_json['results']) == 4
+        assert response_json['results'][0]['enterprise_customer_uuid'] == enterprise_customer_uuid
+
+        #assert False
 
 
 class OfferAssignmentSummaryViewSetTests(

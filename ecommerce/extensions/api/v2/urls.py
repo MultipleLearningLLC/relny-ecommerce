@@ -97,7 +97,7 @@ ENTERPRISE_URLS = [
     url(
         r'^enterprise_offers/(?P<enterprise_catalog_uuid>[^/]+)$',
         enterprise_views.EnterpriseOfferApiViewSet.as_view({'get': 'list'}),
-        name='enterprise_offers_list'
+        name='enterprise_offers'
     ),
 ]
 
