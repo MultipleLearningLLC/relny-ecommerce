@@ -982,14 +982,15 @@ class EnterpriseOfferApiSerializer(serializers.ModelSerializer):  # pylint: disa
     def to_representation(self, instance):
         representation = super().to_representation(instance)
 
-        print(instance)
-        print(dir(instance))
         representation['usage_type'] = get_benefit_type(instance.benefit)
         representation['discount_value'] = instance.benefit.value
         representation['enterprise_customer_uuid'] = instance.condition.enterprise_customer_uuid
         representation['enterprise_catalog_uuid'] = instance.condition.enterprise_customer_catalog_uuid
-        #representation['offer_applications'] = instance.offer_applications.all()
-        #representation['redemptions_remaining'] = instance['count']
+        # max_discount will be None if not set in UI when created
+        if instance.max_discount:
+            representation['remaining_balance'] = instance.max_discount - instance.total_discount
+        else:
+            representation['remaining_balance'] = None
 
         return representation
 

@@ -42,6 +42,7 @@ from ecommerce.enterprise.rules import request_user_has_explicit_access_admin, r
 from ecommerce.extensions.test import factories as extended_factories
 from ecommerce.enterprise.tests.mixins import EnterpriseServiceMockMixin
 from ecommerce.extensions.catalogue.tests.mixins import DiscoveryTestMixin
+from ecommerce.extensions.offer.applicator import Applicator
 from ecommerce.extensions.offer.constants import (
     ASSIGN,
     DAY3,
@@ -66,6 +67,7 @@ from ecommerce.extensions.test.factories import (
     CodeAssignmentNudgeEmailTemplatesFactory
 )
 from ecommerce.invoice.models import Invoice
+from ecommerce.extensions.partner.strategy import DefaultStrategy
 from ecommerce.programs.custom import class_path
 from ecommerce.tests.mixins import JwtMixin, LmsApiMockMixin, ThrottlingMixin
 from ecommerce.tests.testcases import TestCase
@@ -3787,6 +3789,7 @@ class EnterpriseOfferApiViewTests(EnterpriseServiceMockMixin, JwtMixin, TestCase
         super(EnterpriseOfferApiViewTests, self).setUp()
 
         self.user = self.create_user(is_staff=True, email='test@example.com')
+        self.learner = self.create_user(is_staff=True)
         self.client.login(username=self.user.username, password=self.password)
 
         httpretty.enable()
@@ -3825,7 +3828,6 @@ class EnterpriseOfferApiViewTests(EnterpriseServiceMockMixin, JwtMixin, TestCase
         )
 
         for offer in enterprise_offers:
-            print(offer.condition.enterprise_customer_uuid)
             self.mock_specific_enterprise_customer_api(offer.condition.enterprise_customer_uuid)
 
         path = reverse(
@@ -3837,6 +3839,76 @@ class EnterpriseOfferApiViewTests(EnterpriseServiceMockMixin, JwtMixin, TestCase
         assert response_json['results'][0]['enterprise_customer_uuid'] == enterprise_customer_uuid
 
         #assert False
+
+
+
+
+
+    def test_get_enterprise_customer_from_enterprise_offer(self):
+        """
+        Verify that fields on conditional offer are accurate in API response if
+        and an enterprise offer has been applied to purchase a course.
+        """
+
+        # Make courses and use the offer to purchase them
+        course1 = CourseFactory(name='course1', partner=self.partner)
+        product1 = course1.create_or_update_seat('verified', False, 13.37)
+        course2 = CourseFactory(name='course1', partner=self.partner)
+        product2 = course2.create_or_update_seat('verified', False, 5)
+
+        benefit = extended_factories.EnterprisePercentageDiscountBenefitFactory(value=100)
+        enterprise_customer_uuid = str(uuid4())
+        condition = extended_factories.EnterpriseCustomerConditionFactory(
+            enterprise_customer_uuid=enterprise_customer_uuid
+        )
+        offer = extended_factories.EnterpriseOfferFactory(
+            condition=condition,
+            benefit=benefit,
+            max_discount=20,
+            max_basket_applications=2,
+            partner=self.partner,
+        )
+
+        for course in [course1, course2]:
+            self.mock_enterprise_learner_api(
+                learner_id=self.learner.id,
+                enterprise_customer_uuid=str(offer.condition.enterprise_customer_uuid),
+                course_run_id=course.id,
+            )
+            self.mock_catalog_contains_course_runs(
+                [course.id],
+                str(offer.condition.enterprise_customer_uuid),
+                enterprise_customer_catalog_uuid=str(offer.condition.enterprise_customer_catalog_uuid),
+                contains_content=True,
+            )
+
+        basket = factories.BasketFactory(site=self.site, owner=self.learner)
+        basket.add_product(product1)
+        basket.add_product(product2)
+        basket.strategy = DefaultStrategy()
+        Applicator().apply_offers(basket, [offer])
+
+        order = factories.create_order(basket=basket, user=self.learner)
+
+        from ecommerce.extensions.fulfillment.modules import (
+            EnrollmentFulfillmentModule
+        )
+
+        # This is the bit that records all the usage and whatnot so that the
+        # conditionaloffer actuall has its total_discount value updated
+        EnrollmentFulfillmentModule().fulfill_product(order, list(order.lines.all()))
+
+        # do some assert here about the api response and remaining_balance
+        path = reverse(
+            'api:v2:enterprise-offers-api-list',
+            kwargs={'enterprise_customer': enterprise_customer_uuid}
+        )
+        response_json = self.client.get(path).json()
+
+        assert len(response_json['results']) == 1
+        enterprise_offer_data = response_json['results'][0]
+        assert enterprise_offer_data['enterprise_customer_uuid'] == enterprise_customer_uuid
+        assert enterprise_offer_data['remaining_balance'] == 1.63
 
 
 class OfferAssignmentSummaryViewSetTests(
