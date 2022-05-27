@@ -3800,7 +3800,7 @@ class EnterpriseOfferApiViewTests(EnterpriseServiceMockMixin, JwtMixin, TestCase
         httpretty.disable()
         httpretty.reset()
 
-    def test_list(self):
+    def test_endpoint_list_view(self):
         """
         Verify endpoint returns correct number of enterprise offers.
         """
@@ -3838,13 +3838,7 @@ class EnterpriseOfferApiViewTests(EnterpriseServiceMockMixin, JwtMixin, TestCase
         assert len(response_json['results']) == 4
         assert response_json['results'][0]['enterprise_customer_uuid'] == enterprise_customer_uuid
 
-        #assert False
-
-
-
-
-
-    def test_get_enterprise_customer_from_enterprise_offer(self):
+    def test_enterprise_offer_remaining_balance(self):
         """
         Verify that fields on conditional offer are accurate in API response if
         and an enterprise offer has been applied to purchase a course.
@@ -3898,7 +3892,6 @@ class EnterpriseOfferApiViewTests(EnterpriseServiceMockMixin, JwtMixin, TestCase
         # conditionaloffer actuall has its total_discount value updated
         EnrollmentFulfillmentModule().fulfill_product(order, list(order.lines.all()))
 
-        # do some assert here about the api response and remaining_balance
         path = reverse(
             'api:v2:enterprise-offers-api-list',
             kwargs={'enterprise_customer': enterprise_customer_uuid}
