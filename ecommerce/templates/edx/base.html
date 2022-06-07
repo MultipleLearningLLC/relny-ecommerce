@@ -8,7 +8,7 @@
 <!DOCTYPE html>
 <html lang={{ LANGUAGE_CODE }}>
 <head>
-    <link rel="shortcut icon" href="{{ favicon_url }}"/>
+    <link rel="shortcut icon" href="/static/images/relnyfavicon.png"/>
     <link rel="apple-touch-icon" href="{% static 'images/touch-icon.png' %}">
     <link rel="apple-touch-icon" sizes="120x120" href="{% static 'images/touch-icon-2x.png' %}">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/touch-icon-3x.png' %}">
@@ -29,6 +29,13 @@
         {% block stylesheets %}
         {% endblock %}
     {% endcompress %}
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-M96SX8F');</script>
+
 </head>
 <body>
 {% block skip_link %}
@@ -43,6 +50,7 @@
 {% endblock info_message %}
 
 {% block content %}
+
 {% endblock content %}
 
 {% block footer %}
