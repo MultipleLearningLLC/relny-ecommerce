@@ -66,6 +66,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   {% endblocktrans %}
                 {% interpolate_html tmsg email=order.user.email|safe link_end="</a>"|safe link_start=link_start|safe %}
               {% endif %}
+              <a href="https://sales.relny.com/dashboard" style="display:block; margin-top: 12px;">Back to Dashboard</a>
             </div>
 
             {% if order.billing_address %}
@@ -207,7 +208,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="col-xs-12 text-right">
           {% if not show_verification_banner %}
           <a class="dashboard-link nav-link" href="{{ order_dashboard_url }}">
-            Back to Dashboard
+            Back to Dashboard!
           </a>
           {% endif %}
           
