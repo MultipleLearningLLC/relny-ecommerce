@@ -13,7 +13,7 @@
         <p>{% filter force_escape %}{% blocktrans %}You can access your course and complete your verification (if required) on your {{platform_name}} dashboard. {% endblocktrans %}{% endfilter %} </p>
         <p>{% filter force_escape %}{% blocktrans %}To explore other great courses, visit the {{platform_name}} website. More courses are added every day!{% endblocktrans %}{% endfilter %}</p>
         <br>
-        <a href="{{ receipt_page_url }}" style="color: #ffffff; text-decoration: none;">
+        <a href="{{ receipt_page_url }}">
             {% trans "View Payment Information" as tmsg %}{{ tmsg | force_escape }}
         </a>
         <br>
