@@ -2,10 +2,20 @@
 {% load static %}
 
 {% block navbar_brand %}
-    <h1 class="navbar-brand">
+    <span class="navbar-brand">
+      <a href="https://sales.relny.com" style="text-decoration: none;">
         <img class="navbar-brand-logo" alt="RELNY logo" src="/static/images/relnylogo.png" style="width:auto!Important"/>
-    </h1>
+      </a>
+    </span>
+    <style>
+.navbar-brand a:hover, .navbar-brand a {
+  text-decoration: none!important;
+  border: none!important;
+}
+</style>
 {% endblock navbar_brand %}
+
+
 
 {% block dropdown_menu %}
   {% include "edx/base_menu.html" %}
