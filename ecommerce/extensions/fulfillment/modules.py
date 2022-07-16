@@ -21,6 +21,7 @@ from requests.exceptions import ConnectionError as ReqConnectionError  # pylint:
 from requests.exceptions import Timeout
 from rest_framework import status
 
+
 from ecommerce.core.constants import (
     DONATIONS_FROM_CHECKOUT_TESTS_PRODUCT_TYPE_NAME,
     ENROLLMENT_CODE_PRODUCT_CLASS_NAME,
@@ -45,6 +46,7 @@ from ecommerce.extensions.fulfillment.status import LINE
 from ecommerce.extensions.voucher.models import OrderLineVouchers
 from ecommerce.extensions.voucher.utils import create_vouchers
 from ecommerce.notifications.notifications import send_notification
+from ecommerce.extensions.offer.utils import format_benefit_value, get_benefit_type
 
 BasketAttributeType = get_model('basket', 'BasketAttributeType')
 Benefit = get_model('offer', 'Benefit')
@@ -207,6 +209,13 @@ class EnrollmentFulfillmentModule(EnterpriseDiscountMixin, BaseFulfillmentModule
 
         return requests.post(enrollment_api_url, data=json.dumps(data), headers=headers, timeout=timeout)
 
+    def _post_to_zapier_orders(self, data):
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        zapier_url = "https://hooks.zapier.com/hooks/catch/10507370/bg820rr/"
+        return requests.post(zapier_url, data=json.dumps(data), headers=headers)
+
     def _add_enterprise_data_to_enrollment_api_post(self, data, order):
         """ Augment enrollment api POST data with enterprise specific data.
 
@@ -329,11 +338,43 @@ class EnrollmentFulfillmentModule(EnterpriseDiscountMixin, BaseFulfillmentModule
                     }
                 )
             try:
+                zapier_data = {
+                    'order_id': order.number,
+                    'username': order.user.username,
+                    'user_full_name': order.user.full_name,
+                    'user_email': order.user.email,
+                    'product': line.product.course.name,
+                    'amount_paid': str(order.total_incl_tax)
+                }
+                # DEBUGGING LOGS
+                logger.info("Fulfilling for User Email: [%s]", order.user.email)
+                logger.info("Fulfilling Line of Course: [%s]", line.product.course.name)
+                discounts = order.basket_discounts
+                if discounts:
+                    logger.info("There is a discount.. getting info...")
+                    for discount in discounts:
+                        if discount.voucher_code:
+                            voucher = discount.voucher
+                            logger.info("Discount Code: [%s]", voucher.code)
+                            zapier_data['coupon_code'] = voucher.code
+                            zapier_data['discount_amount'] = format_benefit_value(voucher.benefit)
+                            voucher_code= voucher.code
+                            voucher_discount_amount = format_benefit_value(voucher.benefit)
+                            logger.info("Discount Amount: [%s]", voucher_discount_amount)
+
+                else:
+                    logger.info("There are no discounts")
                 self._add_enterprise_data_to_enrollment_api_post(data, order)
                 self.update_orderline_with_enterprise_discount_metadata(order, line)
 
                 # Post to the Enrollment API. The LMS will take care of posting a new EnterpriseCourseEnrollment to
                 # the Enterprise service if the user+course has a corresponding EnterpriseCustomerUser.
+
+                # Zappier Webhook
+                #logger.info("Sending zapier_data: [%s]", zapier_data)
+                zapier_response = self._post_to_zapier_orders(data=zapier_data)
+                logger.info("Zapier Hook Status: [%s]", zapier_response.status_code)
+
                 response = self._post_to_enrollment_api(data, user=order.user, usage='fulfill enrollment')
 
                 if response.status_code == status.HTTP_200_OK:
