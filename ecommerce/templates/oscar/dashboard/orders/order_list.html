@@ -69,6 +69,7 @@
                     <th>{% anchor 'total_incl_tax' _("Total inc tax") as tmsg %}{{ tmsg | force_escape }}</th>
                     <th>{% trans "Number of items" as tmsg %}{{ tmsg | force_escape }}</th>
                     <th>{% trans "Status" as tmsg %}{{ tmsg | force_escape }}</th>
+                    <th>Full Name</th>
                     <th>{% trans "Username" as tmsg %}{{ tmsg | force_escape }}</th>
                     <th>{% trans "Email" as tmsg %}{{ tmsg | force_escape }}</th>
                     <th>{% trans "Date of purchase" as tmsg %}{{ tmsg | force_escape }}</th>
@@ -86,12 +87,16 @@
                         <td>{{ order.num_items }}</td>
                         <td class="order-status">{{ order.status|default:"-" }}</td>
                         <td>
+                            {{order.user.get_full_name}}
+                        </td>
+                        <td>
                             {% if order.user %}
                                 <a href="{% url 'dashboard:user-detail' pk=order.user.id %}">{{ order.user.username }}</a>
                             {% else %}
                                 &lt;{% trans "Deleted" as tmsg %}{{ tmsg | force_escape }}&gt;
                             {% endif %}
                         </td>
+                        
                         <td>
                           {% if order.user %}
                             <a href="{% url 'dashboard:user-detail' pk=order.user.id %}">{{ order.user.email }}</a>
